@@ -1,0 +1,137 @@
+buildscript {      // Configuration for building
+    repositories {
+        jcenter()      // Bintray's repository - a fast Maven Central mirror & more
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.cloud.tools:appengine-gradle-plugin:1.+' // Latest 1.x.x release
+        classpath 'org.akhikhl.gretty:gretty:+'
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.2.0.M5'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+    id 'org.asciidoctor.convert' version '1.5.8'
+}
+
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'org.akhikhl.gretty'
+apply plugin: 'com.google.cloud.tools.appengine'
+
+group = 'com.yazan98.books'
+version = '1.0.0'
+sourceCompatibility = '1.8'
+
+configurations {
+    developmentOnly
+    runtimeClasspath {
+        extendsFrom developmentOnly
+    }
+    implementationOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven {
+        url 'https://maven-central.storage.googleapis.com'             // Google's mirror of Maven Central
+    }
+}
+
+ext {
+    set('snippetsDir', file("build/generated-snippets"))
+    set('springCloudServicesVersion', "2.1.4.RELEASE")
+    set('springCloudVersion', "Hoxton.M2")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker'
+//    implementation 'org.springframework.cloud:spring-cloud-gcp-starter'
+//    implementation 'org.springframework.cloud:spring-cloud-gcp-starter-pubsub'
+//    implementation 'org.springframework.cloud:spring-cloud-gcp-starter-storage'
+    implementation 'org.springframework.cloud:spring-cloud-starter'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard'
+    implementationOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'mysql:mysql-connector-java'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.batch:spring-batch-test'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+
+    implementation group: 'io.swagger.core.v3', name: 'swagger-annotations', version: '2.0.8'
+    implementation group: 'io.swagger.core.v3', name: 'swagger-jaxrs2', version: '2.0.8'
+    implementation group: 'io.swagger.core.v3', name: 'swagger-models', version: '2.0.8'
+    implementation group: 'io.swagger.core.v3', name: 'swagger-core', version: '2.0.8'
+    implementation group: 'io.swagger.core.v3', name: 'swagger-integration', version: '2.0.8'
+    implementation group: 'io.swagger.core.v3', name: 'swagger-jaxrs2-servlet-initializer', version: '2.0.8'
+    implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.9.2'
+    implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
+
+    implementation "org.springframework.plugin:spring-plugin-core:1.2.0.RELEASE"
+    implementation group: 'org.springframework.plugin', name: 'spring-plugin-core', version: '2.0.0.M1'
+    implementation 'com.google.firebase:firebase-admin:6.9.0'
+
+    implementation "org.jsondoc:spring-boot-starter-jsondoc:1.2.22"
+    implementation "org.jsondoc:jsondoc-ui-webjar:1.2.22"
+
+    // google app engine
+    providedCompile 'javax.servlet:javax.servlet-api:3.1.0'
+    providedCompile 'com.google.appengine:appengine:+'
+    implementation "org.springframework.cloud:spring-cloud-gcp-starter-sql:1.0.0.M1"
+}
+
+
+gretty {
+    httpPort = 8080
+    contextPath = '/'
+    servletContainer = 'jetty9'  // What App Engine Flexible uses
+}
+
+appengine {
+
+    deploy {   // deploy configuration
+        stopPreviousVersion = true  // default - stop the current version
+        promote = true              // default - & make this the current version
+    }
+
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencyManagement {
+    imports {
+        mavenBom "io.pivotal.spring.cloud:spring-cloud-services-dependencies:${springCloudServicesVersion}"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+test {
+    outputs.dir snippetsDir
+    useJUnitPlatform()
+}
+
+asciidoctor {
+    inputs.dir snippetsDir
+    dependsOn test
+}
